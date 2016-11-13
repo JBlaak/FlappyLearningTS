@@ -29,6 +29,10 @@ export default class Bird {
         return this._alive;
     }
 
+    set alive(value: boolean) {
+        this._alive = value;
+    }
+
     get gravity(): number {
         return this._gravity;
     }

@@ -3,6 +3,7 @@ import View from "./view";
 import {Images} from "./models/images";
 import Pipe from "./pipe";
 import Bird from "./bird";
+import Timer = NodeJS.Timer;
 
 export default class Game {
 
@@ -13,7 +14,9 @@ export default class Game {
         pipebottom: "./img/pipebottom.png"
     };
 
-    private _view: View|null;
+    private _loaded = false;
+
+    private _view: View|null = null;
 
     private _canvas: HTMLCanvasElement;
 
@@ -35,9 +38,12 @@ export default class Game {
     /* Active birds */
     private _birds: Array<Bird> = [];
 
+    /* Our timer running everything */
+    private _interval: Timer|null = null;
+
     constructor(canvas: HTMLCanvasElement) {
         this._canvas = canvas;
-        
+
         /* Just to manually be able to flap all birds, note that you should do this when training the system */
         canvas.addEventListener('click', () => {
             this._birds.forEach(bird => bird.flap());
@@ -45,13 +51,25 @@ export default class Game {
     }
 
     start(): void {
-        this.preload().then(
-            images => {
-                this._view = new View(this._canvas, images);
+        if (!this._loaded) {
+            this.preload().then(
+                images => {
+                    this._loaded = true;
+                    this._view = new View(this._canvas, images);
 
-                this.attach();
-            }
-        );
+                    this.attach();
+                }
+            );
+        } else {
+            this.attach();
+        }
+    }
+
+    private terminate(): void {
+        this.detach();
+        this._distanceTraveledPx = 0;
+        this._pipes = [];
+        this._birds = [];
     }
 
     private attach() {
@@ -74,10 +92,16 @@ export default class Game {
             this._view.draw(0, this._pipes, this._birds);
         }
         setTimeout(() => {
-            setInterval(() => {
+            this._interval = setInterval(() => {
                 this.step();
             }, this._frameDuration);
         }, 2000);
+    }
+
+    private detach() {
+        if (this._interval !== null) {
+            clearInterval(this._interval)
+        }
     }
 
     private step() {
@@ -99,7 +123,32 @@ export default class Game {
             }
         }
 
+        /* Flap the birds */
         this._birds.forEach(bird => bird.update());
+
+        /* Determine if they killed themselves */
+        this._birds.forEach(bird => {
+            this._pipes.forEach(pipe => {
+                console.log(bird, pipe);
+                if (
+                    (
+                        /* Top pipe */
+                        bird.x + bird.width > pipe.x - this._distanceTraveledPx
+                        && bird.x + bird.width < pipe.x + pipe.width - this._distanceTraveledPx
+                        && bird.y < pipe.y - pipe.opening
+                    )
+                    || (
+                        /* Bottom pipe */
+                        bird.x + bird.width > pipe.x - this._distanceTraveledPx
+                        && bird.x + bird.width < pipe.x + pipe.width - this._distanceTraveledPx
+                        && bird.y + bird.height > pipe.y
+                    )
+                    || bird.y > this._canvas.height
+                    || bird.y + bird.height <= 0) {
+                    bird.alive = false;
+                }
+            });
+        });
 
         /* Pass to the view to render */
         if (this._view != null) {
@@ -108,6 +157,10 @@ export default class Game {
                 this._pipes,
                 this._birds
             );
+        }
+
+        if (!this._birds.some(bird => bird.alive)) {
+            this.terminate();
         }
     }
 
