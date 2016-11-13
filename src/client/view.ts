@@ -1,5 +1,6 @@
 import {Images} from "./models/images";
 import Pipe from "./pipe";
+import Bird from "./bird";
 export default class View {
     private _images: Images;
     private _ctx: CanvasRenderingContext2D;
@@ -10,14 +11,15 @@ export default class View {
     constructor(ctx: HTMLCanvasElement, images: Images) {
         this._ctx = <CanvasRenderingContext2D> ctx.getContext('2d');
         this._images = images;
+        
+        this.draw(0, [], []);
     }
 
-    draw(distanceTraveledPx: number, pipes: Array<Pipe>) {
+    draw(distanceTraveledPx: number, pipes: Array<Pipe>, birds: Array<Bird>) {
         this._ctx.clearRect(0, 0, this._width, this._height);
         this.background(distanceTraveledPx);
         this.pipes(pipes, distanceTraveledPx);
-
-
+        this.birds(birds);
     }
 
     private background(distanceTraveledPx: number) {
@@ -49,4 +51,20 @@ export default class View {
             );
         }
     }
+
+    private birds(birds: Array<Bird>) {
+        this._ctx.fillStyle = "#FFC600";
+        this._ctx.strokeStyle = "#CE9E00";
+        for (var i in birds) {
+            if (birds[i].alive) {
+                this._ctx.save();
+                this._ctx.translate(birds[i].x, birds[i].y);
+                this._ctx.translate(birds[i].width / 2, birds[i].height / 2);
+                this._ctx.rotate(Math.PI / 2 * birds[i].gravity / 20);
+                this._ctx.drawImage(this._images.bird, -birds[i].width, -birds[i].height / 2, birds[i].width, birds[i].height);
+                this._ctx.restore();
+            }
+        }
+    }
+
 }

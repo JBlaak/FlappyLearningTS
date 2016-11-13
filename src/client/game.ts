@@ -2,6 +2,7 @@ import preload from "./preload";
 import View from "./view";
 import {Images} from "./models/images";
 import Pipe from "./pipe";
+import Bird from "./bird";
 
 export default class Game {
 
@@ -17,7 +18,7 @@ export default class Game {
     private _canvas: HTMLCanvasElement;
 
     /* Duration of a frame */
-    private _frameDuration = 1000 / 120;
+    private _frameDuration = 1000 / 80;
 
     /* Current location of the background */
     private _distanceTraveledPx = 0;
@@ -31,8 +32,16 @@ export default class Game {
     /* Generated pipes */
     private _pipes: Array<Pipe> = [];
 
+    /* Active birds */
+    private _birds: Array<Bird> = [];
+
     constructor(canvas: HTMLCanvasElement) {
         this._canvas = canvas;
+        
+        /* Just to manually be able to flap all birds, note that you should do this when training the system */
+        canvas.addEventListener('click', () => {
+            this._birds.forEach(bird => bird.flap());
+        });
     }
 
     start(): void {
@@ -40,21 +49,35 @@ export default class Game {
             images => {
                 this._view = new View(this._canvas, images);
 
-                /* Add initial pipes */
-                let offset = this._spawnInterval;
-                do {
-                    this._pipes.push(new Pipe(
-                        offset,
-                        this._canvas.height
-                    ));
-                    offset += this._spawnInterval;
-                } while (offset < this._canvas.width);
-
-                setInterval(() => {
-                    this.step();
-                }, this._frameDuration);
+                this.attach();
             }
         );
+    }
+
+    private attach() {
+        /* Add bird */
+        //TODO move to neural network
+        const bird = new Bird();
+        this._birds.push(bird);
+
+        /* Add initial pipes */
+        let offset = this._spawnInterval;
+        do {
+            this._pipes.push(new Pipe(
+                offset,
+                this._canvas.height
+            ));
+            offset += this._spawnInterval;
+        } while (offset < this._canvas.width);
+
+        if (this._view !== null) {
+            this._view.draw(0, this._pipes, this._birds);
+        }
+        setTimeout(() => {
+            setInterval(() => {
+                this.step();
+            }, this._frameDuration);
+        }, 2000);
     }
 
     private step() {
@@ -75,12 +98,15 @@ export default class Game {
                 this._pipes.splice(i, 1);
             }
         }
-       
+
+        this._birds.forEach(bird => bird.update());
+
         /* Pass to the view to render */
         if (this._view != null) {
             this._view.draw(
                 this._distanceTraveledPx,
-                this._pipes
+                this._pipes,
+                this._birds
             );
         }
     }
