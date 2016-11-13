@@ -1,8 +1,8 @@
-import preload from "./preload";
-import View from "./view";
-import {Images} from "./models/images";
-import Pipe from "./pipe";
-import Bird from "./bird";
+import preload from "./game/preload";
+import View from "./game/view";
+import {Images} from "./game/models/images";
+import Pipe from "./game/pipe";
+import Bird from "./game/bird";
 import Timer = NodeJS.Timer;
 
 export default class Game {
@@ -16,18 +16,23 @@ export default class Game {
 
     private _loaded = false;
 
+    private _started = false;
+
     private _view: View|null = null;
 
     private _canvas: HTMLCanvasElement;
 
     /* Duration of a frame */
-    private _frameDuration = 1000 / 80;
+    private _frameDuration = 1000 / (60 * 10);
+
+    /* Should we draw anything */
+    private _drawing: boolean = false;
 
     /* Current location of the background */
     private _distanceTraveledPx = 0;
 
     /* Speed the background is moving in px */
-    private _speed = 0.5;
+    private _speed = 2;
 
     /* Interval at which new pipes spawn */
     private _spawnInterval = 240;
@@ -41,16 +46,22 @@ export default class Game {
     /* Our timer running everything */
     private _interval: Timer|null = null;
 
-    constructor(canvas: HTMLCanvasElement) {
-        this._canvas = canvas;
+    /* On tick listeners */
+    private _tickListeners: Array<() => any> = [];
 
-        /* Just to manually be able to flap all birds, note that you should do this when training the system */
-        canvas.addEventListener('click', () => {
-            this._birds.forEach(bird => bird.flap());
-        });
+    /* On die listeners */
+    private _dieListeners: Array<(bird: Bird) => any> = [];
+
+    /* On terminate listeners */
+    private _terminateListeners: Array<() => any> = [];
+
+    constructor(canvas: HTMLCanvasElement, drawing: boolean = false) {
+        this._canvas = canvas;
+        this._drawing = drawing;
     }
 
-    start(): void {
+    start(birds: Array<Bird>): void {
+        this._birds = birds;
         if (!this._loaded) {
             this.preload().then(
                 images => {
@@ -65,19 +76,36 @@ export default class Game {
         }
     }
 
+    onTick(listener: () => any) {
+        this._tickListeners.push(listener);
+    }
+
+    onDie(listener: (bird: Bird)=>any) {
+        this._dieListeners.push(listener);
+    }
+
+    onTerminate(listener: ()=>any) {
+        this._terminateListeners.push(listener);
+    }
+
+    get distanceTraveledPx(): number {
+        return this._distanceTraveledPx;
+    }
+
+    get pipes(): Array<Pipe> {
+        return this._pipes;
+    }
+
     private terminate(): void {
         this.detach();
+        this._terminateListeners.forEach(listener => listener());
         this._distanceTraveledPx = 0;
         this._pipes = [];
         this._birds = [];
     }
 
     private attach() {
-        /* Add bird */
-        //TODO move to neural network
-        const bird = new Bird();
-        this._birds.push(bird);
-
+        this._started = true;
         /* Add initial pipes */
         let offset = this._spawnInterval;
         do {
@@ -88,17 +116,23 @@ export default class Game {
             offset += this._spawnInterval;
         } while (offset < this._canvas.width);
 
-        if (this._view !== null) {
+        if (this._view !== null && this._drawing) {
             this._view.draw(0, this._pipes, this._birds);
         }
-        setTimeout(() => {
+
+        if (!this._drawing) {
+            while (this._started) {
+                this.step();
+            }
+        } else {
             this._interval = setInterval(() => {
                 this.step();
             }, this._frameDuration);
-        }, 2000);
+        }
     }
 
     private detach() {
+        this._started = false;
         if (this._interval !== null) {
             clearInterval(this._interval)
         }
@@ -127,37 +161,42 @@ export default class Game {
         this._birds.forEach(bird => bird.update());
 
         /* Determine if they killed themselves */
-        this._birds.forEach(bird => {
-            this._pipes.forEach(pipe => {
-                console.log(bird, pipe);
-                if (
-                    (
-                        /* Top pipe */
-                        bird.x + bird.width > pipe.x - this._distanceTraveledPx
-                        && bird.x + bird.width < pipe.x + pipe.width - this._distanceTraveledPx
-                        && bird.y < pipe.y - pipe.opening
-                    )
-                    || (
-                        /* Bottom pipe */
-                        bird.x + bird.width > pipe.x - this._distanceTraveledPx
-                        && bird.x + bird.width < pipe.x + pipe.width - this._distanceTraveledPx
-                        && bird.y + bird.height > pipe.y
-                    )
-                    || bird.y > this._canvas.height
-                    || bird.y + bird.height <= 0) {
-                    bird.alive = false;
-                }
+        this._birds
+            .filter(bird => bird.alive)
+            .forEach(bird => {
+                this._pipes.forEach(pipe => {
+                    //TODO fix this so that the "ass" of the bird also is hit
+                    if (
+                        (
+                            /* Top pipe */
+                            bird.x + bird.width > pipe.x - this._distanceTraveledPx
+                            && bird.y < pipe.y - pipe.opening
+                            && bird.x + bird.width < pipe.x + pipe.width - this._distanceTraveledPx
+                        )
+                        || (
+                            /* Bottom pipe */
+                            bird.x + bird.width > pipe.x - this._distanceTraveledPx
+                            && bird.x + bird.width < pipe.x + pipe.width - this._distanceTraveledPx
+                            && bird.y + bird.height > pipe.y
+                        )
+                        || bird.y > this._canvas.height
+                        || bird.y + bird.height <= 0) {
+                        bird.alive = false;
+                        this._dieListeners.forEach(listener => listener(bird));
+                    }
+                });
             });
-        });
 
         /* Pass to the view to render */
-        if (this._view != null) {
+        if (this._view != null && this._drawing) {
             this._view.draw(
                 this._distanceTraveledPx,
                 this._pipes,
                 this._birds
             );
         }
+
+        this._tickListeners.forEach(listener => listener());
 
         if (!this._birds.some(bird => bird.alive)) {
             this.terminate();

@@ -7,10 +7,10 @@ export default class Pipe {
     private _y: number;
     
     /* Width of the pipe */
-    private _width = 40;
+    private _width = 50;
 
     /* Size of opening in the pipe */
-    private _opening = 100;
+    private _opening = 120;
 
     constructor(x: number, maxHeight: number) {
         this._x = x;

@@ -37,14 +37,6 @@ export default class Bird {
         return this._gravity;
     }
 
-    get velocity(): number {
-        return this._velocity;
-    }
-
-    get jump(): number {
-        return this._jump;
-    }
-
     update() {
         this._gravity += this._velocity;
         this._y += this._gravity;
