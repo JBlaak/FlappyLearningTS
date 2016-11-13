@@ -4,17 +4,19 @@ export default class Layer {
     private _id: number;
     private _neurons: Array<Neuron> = [];
 
-    constructor(id: number) {
+    constructor(id: number, neurons: Array<Neuron> = []) {
         this._id = id;
+        this._neurons = neurons;
     }
 
-    populate(nNeurons: number, nInputs: number) {
-        this._neurons = [];
+    static populated(id: number, nNeurons: number, nInputs: number): Layer {
+        const neurons: Array<Neuron> = [];
         for (let i = 0; i < nNeurons; i++) {
-            const neuron = new Neuron();
-            neuron.populate(nInputs);
-            this._neurons.push(neuron);
+            const neuron = Neuron.populated(nInputs);
+            neurons.push(neuron);
         }
+
+        return new Layer(id, neurons);
     }
 
     get id(): number {

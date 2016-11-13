@@ -41,8 +41,8 @@ export default class Generation {
 
     next(): Array<NetworkData> {
         const nexts: Array<NetworkData> = [];
-
-        /* Take subset of the previous networks */
+        
+        /* Take the best of the previous networks (since the genomes are sorted) */
         for (let i = 0; i < Math.round(this._elitism * this._population); i++) {
             if (nexts.length < this._population) {
                 nexts.push(Generation.copy(this._genomes[i].network));
@@ -51,7 +51,10 @@ export default class Generation {
 
         /* Add randomness by spawning with new weights */
         for (let i = 0; i < Math.round(this._randomBehaviour * this._population); i++) {
+            /* Take a random copy */
             const network: NetworkData = Generation.copy(this._genomes[0].network);
+
+            /* Alter the weights to random numbers */
             for (const k in network.weights) {
                 network.weights[k] = Generation.randomClamped();
             }
@@ -64,6 +67,7 @@ export default class Generation {
         let max = 0;
         while (true) {
             for (let i = 0; i < max; i++) {
+                /* Prefer breeding the best genomes; i.e. the first few */
                 const children = this.breed(
                     this._genomes[i],
                     this._genomes[max],
@@ -84,10 +88,18 @@ export default class Generation {
         }
     }
 
-    private breed(genome1: Genome, genome2: Genome, nbChilds: number): Array<Genome> {
+    /**
+     * Breed two genomes, this will transfer certain weights, but also introduce random mutations based on
+     * the mutationRate
+     * @param genome1
+     * @param genome2
+     * @param nChilds
+     * @returns {Array<Genome>}
+     */
+    private breed(genome1: Genome, genome2: Genome, nChilds: number): Array<Genome> {
         var result: Array<Genome> = [];
 
-        for (let nb = 0; nb < nbChilds; nb++) {
+        for (let nb = 0; nb < nChilds; nb++) {
             let data: Genome = genome1.copy();
 
             /* Transfer weights */

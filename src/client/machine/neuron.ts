@@ -3,11 +3,18 @@ export default class Neuron {
     private _value = 0;
     private _weights: Array<number> = [];
 
-    populate(n: number) {
-        this._weights = [];
+
+    constructor(weights: Array<number> = []) {
+        this._weights = weights;
+    }
+
+    static populated(n: number) {
+        const weights: Array<number> = [];
         for (var i = 0; i < n; i++) {
-            this._weights.push(Neuron.randomClamped());
+            weights.push(Neuron.randomClamped());
         }
+
+        return new Neuron(weights);
     }
 
     private static randomClamped(): number {
@@ -25,4 +32,5 @@ export default class Neuron {
     get weights(): Array<number> {
         return this._weights;
     }
+
 }
