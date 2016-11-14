@@ -2,11 +2,11 @@ import Game from './client/game';
 import Bird from "./client/game/bird";
 import Machine from "./client/machine";
 
-const run = (onTerminate: (result: number) => any, machine: Machine, drawing: boolean) => {
+const run = (onTerminate: () => any, machine: Machine) => {
 
     const canvas = document.querySelector("#flappy") as HTMLCanvasElement;
-    const game = new Game(canvas, drawing);
-    const networks = machine.proceed();
+    const game = new Game(canvas);
+    const networks = machine.nextGeneration();
 
     /* Add the birds based on how many generations we have */
     const birds: Array<Bird> = [];
@@ -42,14 +42,12 @@ const run = (onTerminate: (result: number) => any, machine: Machine, drawing: bo
     game.onDie(bird => {
         for (let i = 0; i < birds.length; i++) {
             if (birds[i] === bird) {
-                machine.networkScore(networks[i], game.distanceTraveledPx);
+                machine.setScoreOfNetwork(networks[i], game.distanceTraveledPx);
             }
         }
     });
 
-    game.onTerminate(() => {
-        onTerminate(game.distanceTraveledPx)
-    });
+    game.onTerminate(onTerminate);
 
     game.start(birds);
 };
@@ -58,14 +56,8 @@ window.onload = () => {
 
     const machine = new Machine();
 
-    let drawing = true;
-    const start = (result: number|null = null) => {
-
-        /* Start drawing after first bird has hit 4000 */
-        if (result !== null && result > 4000) {
-            drawing = true;
-        }
-        run(start, machine, drawing);
+    const start = () => {
+        run(start, machine);
     };
 
     start();

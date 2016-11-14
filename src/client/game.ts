@@ -16,17 +16,12 @@ export default class Game {
 
     private _loaded = false;
 
-    private _started = false;
-
     private _view: View|null = null;
 
     private _canvas: HTMLCanvasElement;
 
     /* Duration of a frame */
-    private _frameDuration = 1000 / (60 * 10);
-
-    /* Should we draw anything */
-    private _drawing: boolean = false;
+    private _frameDuration = 1000 / (60 * 1);
 
     /* Current location of the background */
     private _distanceTraveledPx = 0;
@@ -55,9 +50,8 @@ export default class Game {
     /* On terminate listeners */
     private _terminateListeners: Array<() => any> = [];
 
-    constructor(canvas: HTMLCanvasElement, drawing: boolean = false) {
+    constructor(canvas: HTMLCanvasElement) {
         this._canvas = canvas;
-        this._drawing = drawing;
     }
 
     start(birds: Array<Bird>): void {
@@ -105,7 +99,6 @@ export default class Game {
     }
 
     private attach() {
-        this._started = true;
         /* Add initial pipes */
         let offset = this._spawnInterval;
         do {
@@ -116,23 +109,16 @@ export default class Game {
             offset += this._spawnInterval;
         } while (offset < this._canvas.width);
 
-        if (this._view !== null && this._drawing) {
+        if (this._view !== null) {
             this._view.draw(0, this._pipes, this._birds);
         }
 
-        if (!this._drawing) {
-            while (this._started) {
-                this.step();
-            }
-        } else {
-            this._interval = setInterval(() => {
-                this.step();
-            }, this._frameDuration);
-        }
+        this._interval = setInterval(() => {
+            this.step();
+        }, this._frameDuration);
     }
 
     private detach() {
-        this._started = false;
         if (this._interval !== null) {
             clearInterval(this._interval)
         }
@@ -188,7 +174,7 @@ export default class Game {
             });
 
         /* Pass to the view to render */
-        if (this._view != null && this._drawing) {
+        if (this._view != null) {
             this._view.draw(
                 this._distanceTraveledPx,
                 this._pipes,

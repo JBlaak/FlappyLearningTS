@@ -3,7 +3,6 @@ export default class Neuron {
     private _value = 0;
     private _weights: Array<number> = [];
 
-
     constructor(weights: Array<number> = []) {
         this._weights = weights;
     }

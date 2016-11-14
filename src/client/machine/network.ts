@@ -10,7 +10,7 @@ export default class Network {
     }
 
     /**
-     * Generate the perceptrons, so input > hiddens > outputs each with their own number of neurons
+     * Generate the perceptrons, so input > hiddens > outputs each with their own number of nNeuronsInLayer
      * @param nInputs
      * @param nHiddens
      * @param nOutputs
@@ -18,12 +18,12 @@ export default class Network {
     generatePerceptrons(nInputs: number, nHiddens: Array<number>, nOutputs: number) {
         let index = 0;
 
-        /* The input neurons */
+        /* The input nNeuronsInLayer */
         const inputLayer = Layer.populated(index, nInputs, 0);
         this._layers.push(inputLayer);
         index++;
 
-        /* The hidden neurons layers */
+        /* The hidden nNeuronsInLayer layers */
         let previousNeurons = nInputs;
         for (var i in nHiddens) {
             const layer = Layer.populated(index, nHiddens[i], previousNeurons);
@@ -32,7 +32,7 @@ export default class Network {
             index++;
         }
 
-        /* The output neurons */
+        /* The output nNeuronsInLayer */
         const outputLayer = Layer.populated(index, nOutputs, previousNeurons);
         this._layers.push(outputLayer);
     }
@@ -43,13 +43,12 @@ export default class Network {
      */
     getData(): NetworkData {
         const data: NetworkData = {
-            neurons: [],
+            nNeuronsInLayer: [],
             weights: []
         };
 
-
         for (let i in this._layers) {
-            data.neurons.push(this._layers[i].neurons.length);
+            data.nNeuronsInLayer.push(this._layers[i].neurons.length);
             for (let j in this._layers[i].neurons) {
                 for (let k in this._layers[i].neurons[j].weights) {
                     data.weights.push(this._layers[i].neurons[j].weights[k]);
@@ -70,18 +69,18 @@ export default class Network {
         let indexWeights = 0;
         const layers: Array<Layer> = [];
 
-        for (const i in data.neurons) {
-            // /* Populate with the number of neurons in this layer */
-            const layer = Layer.populated(index, data.neurons[i], previousNeurons);
+        for (const i in data.nNeuronsInLayer) {
+            /* Populate with the number of nNeuronsInLayer in this layer */
+            const layer = Layer.populated(index, data.nNeuronsInLayer[i], previousNeurons);
 
-            /* From this populated layer, transfer the weights back to the neurons */
+            /* From this populated layer, transfer the weights back to the nNeuronsInLayer */
             for (let j in layer.neurons) {
                 for (let k in layer.neurons[j].weights) {
                     layer.neurons[j].weights[k] = data.weights[indexWeights];
                     indexWeights++;
                 }
             }
-            previousNeurons = data.neurons[i];
+            previousNeurons = data.nNeuronsInLayer[i];
             index++;
             layers.push(layer);
         }

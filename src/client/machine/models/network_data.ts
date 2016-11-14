@@ -1,4 +1,4 @@
 export interface NetworkData {
-    neurons: Array<number>,
+    nNeuronsInLayer: Array<number>,
     weights: Array<number>
 }

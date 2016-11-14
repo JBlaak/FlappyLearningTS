@@ -7,7 +7,7 @@ export default class Machine {
     /* Size of the population */
     private _population = 50;
 
-    /* Number of neurons in each part of the network */
+    /* Number of nNeuronsInLayer in each part of the network */
     private _perceptronNetwork = {
         input: 2,
         hiddens: [2],
@@ -34,11 +34,11 @@ export default class Machine {
 
     private _generations: Array<Generation> = [];
 
-    proceed(): Array<Network> {
+    nextGeneration(): Array<Network> {
         /* Generation creation */
         const networks = this._generations.length === 0
-            ? this.firstGeneration()
-            : this.nextGeneration();
+            ? this._firstGeneration()
+            : this._nextGeneration();
 
         /* Transferring information about the generations */
         const nns: Array<Network> = [];
@@ -55,7 +55,13 @@ export default class Machine {
         return nns;
     }
 
-    private firstGeneration(): Array<NetworkData> {
+    setScoreOfNetwork(network: Network, score: number) {
+        const genome = new Genome(score, network.getData());
+
+        this._generations[this._generations.length - 1].addGenome(genome);
+    }
+
+    private _firstGeneration(): Array<NetworkData> {
         const result: Array<NetworkData> = [];
 
         for (let i = 0; i < this._population; i++) {
@@ -79,7 +85,7 @@ export default class Machine {
         return result
     }
 
-    private nextGeneration(): Array<NetworkData> {
+    private _nextGeneration(): Array<NetworkData> {
         const gen = this._generations[this._generations.length - 1].next();
         this._generations.push(new Generation(
             this._population,
@@ -93,9 +99,4 @@ export default class Machine {
         return gen;
     }
 
-    networkScore(network: Network, score: number) {
-        const genome = new Genome(score, network.getData());
-        
-        this._generations[this._generations.length - 1].addGenome(genome);
-    }
 }

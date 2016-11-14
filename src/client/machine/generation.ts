@@ -41,7 +41,7 @@ export default class Generation {
 
     next(): Array<NetworkData> {
         const nexts: Array<NetworkData> = [];
-        
+       
         /* Take the best of the previous networks (since the genomes are sorted) */
         for (let i = 0; i < Math.round(this._elitism * this._population); i++) {
             if (nexts.length < this._population) {
