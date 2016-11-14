@@ -27,16 +27,13 @@ export default class Generation {
     }
 
     addGenome(genome: Genome) {
-        if (this._genomes.length === 0) {
-            this._genomes.push(genome);
-        }
         /* Add a genome nicely sorted based on score */
-        for (let i = 0; i < this._genomes.length; i++) {
+        for (var i = 0; i < this._genomes.length; i++) {
             if (genome.score > this._genomes[i].score) {
-                this._genomes.splice(i, 0, genome);
                 break;
             }
         }
+        this._genomes.splice(i, 0, genome);
     }
 
     next(): Array<NetworkData> {

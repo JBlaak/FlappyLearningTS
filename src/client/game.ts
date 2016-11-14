@@ -3,7 +3,6 @@ import View from "./game/view";
 import {Images} from "./game/models/images";
 import Pipe from "./game/pipe";
 import Bird from "./game/bird";
-import Timer = NodeJS.Timer;
 
 export default class Game {
 
@@ -39,7 +38,7 @@ export default class Game {
     private _birds: Array<Bird> = [];
 
     /* Our timer running everything */
-    private _interval: Timer|null = null;
+    private _interval: number|null = null;
 
     /* On tick listeners */
     private _tickListeners: Array<() => any> = [];
