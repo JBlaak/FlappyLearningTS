@@ -1,14 +1,9 @@
 {
   "compilerOptions": {
-    "outDir": "./build",
     "sourceMap": true,
     "moduleResolution": "node",
     "module": "commonjs",
     "target": "es6",
     "strictNullChecks": true
-  },
-  "files": [
-    "./src/client.ts",
-    "./src/server.ts"
-  ]
+  }
 }

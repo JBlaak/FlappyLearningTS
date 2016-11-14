@@ -4,9 +4,7 @@ var webpack = require('webpack');
 module.exports = {
     devtool: "inline-source-map",
     debug: true,
-    entry: [
-        './build/client'
-    ],
+    entry: './src/client',
     output: {
         path: path.join(__dirname, 'public/js'),
         filename: 'bundle.js'
@@ -15,16 +13,13 @@ module.exports = {
         new webpack.NoErrorsPlugin()
     ],
     resolve: {
-        extensions: ['.js']
+        extensions: ['', '.js', '.ts']
     },
     module: {
         loaders: [
             {
-                test: /\.js$/,
-                include: [
-                    path.join(__dirname, 'client')
-                ],
-                loaders: ['babel-loader']
+                test: /\.tsx?$/,
+                loaders: ['babel-loader', 'ts-loader']
             }
         ]
     }

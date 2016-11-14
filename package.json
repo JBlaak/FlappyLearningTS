@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node ./build/server.js",
-    "build": "tsc && webpack --display-error-details"
+    "build": "webpack --display-error-details"
   },
   "dependencies": {
     "@types/express": "^4.0.33",
@@ -15,6 +15,7 @@
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "ts-loader": "^1.2.0",
+    "typescript": "^2.0.9",
     "webpack": "^1.13.3"
   }
 }
