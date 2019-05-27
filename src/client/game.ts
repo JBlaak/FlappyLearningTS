@@ -1,211 +1,77 @@
-import preload from "./game/preload";
 import View from "./game/view";
-import {Images} from "./game/models/images";
-import Pipe from "./game/pipe";
-import Bird from "./game/bird";
+import {Snake} from './game/models/snake';
+import {Cherry} from './game/models/cherry';
 
 export default class Game {
 
-    private sprites = {
-        bird: "./img/bird.png",
-        background: "./img/background.png",
-        pipetop: "./img/pipetop.png",
-        pipebottom: "./img/pipebottom.png"
-    };
+    private _view: View;
 
-    private _loaded = false;
+    public static width = 100;
+    public static height = 100;
 
-    private _view: View|null = null;
-
-    private _canvas: HTMLCanvasElement;
-
-    /* Duration of a frame */
-    private _frameDuration = 1000 / (60 * 1);
-
-    /* Current location of the background */
-    private _distanceTraveledPx = 0;
-
-    /* Speed the background is moving in px */
-    private _speed = 2;
-
-    /* Interval at which new pipes spawn */
-    private _spawnInterval = 240;
-
-    /* Generated pipes */
-    private _pipes: Array<Pipe> = [];
-
-    /* Active birds */
-    private _birds: Array<Bird> = [];
-
-    /* Our timer running everything */
-    private _interval: number|null = null;
-
-    /* On tick listeners */
-    private _tickListeners: Array<() => any> = [];
-
-    /* On die listeners */
-    private _dieListeners: Array<(bird: Bird) => any> = [];
-
-    /* On terminate listeners */
-    private _terminateListeners: Array<() => any> = [];
-
-    constructor(canvas: HTMLCanvasElement) {
-        this._canvas = canvas;
+    private constructor(
+        public snake: Snake,
+        public cherry: Cherry,
+        private canvas: HTMLCanvasElement
+    ) {
+        this._view = new View(canvas)
     }
 
-    start(birds: Array<Bird>): void {
-        this._birds = birds;
-        if (!this._loaded) {
-            this.preload().then(
-                images => {
-                    this._loaded = true;
-                    this._view = new View(this._canvas, images);
+    public static create(canvas: HTMLCanvasElement): Game {
+        const snake = {
+            isAlive: true,
+            coordinates: [
+                (this.randomCoordinate())
+            ]
+        };
 
-                    this.attach();
-                }
-            );
-        } else {
-            this.attach();
+        const cherry = this.randomCoordinate();
+
+        return new Game(snake, cherry, canvas);
+    }
+
+
+    public setNextCoordinate(x: number, y: number) {
+        //Out of bounds
+        if (x > Game.width || x < 0 || y > Game.height || y < 0) {
+            this.snake.isAlive = false;
+            this._view.draw(this);
+            return;
         }
-    }
-
-    onTick(listener: () => any) {
-        this._tickListeners.push(listener);
-    }
-
-    onDie(listener: (bird: Bird)=>any) {
-        this._dieListeners.push(listener);
-    }
-
-    onTerminate(listener: ()=>any) {
-        this._terminateListeners.push(listener);
-    }
-
-    get distanceTraveledPx(): number {
-        return this._distanceTraveledPx;
-    }
-
-    get pipes(): Array<Pipe> {
-        return this._pipes;
-    }
-
-    private terminate(): void {
-        this.detach();
-        this._terminateListeners.forEach(listener => listener());
-        this._distanceTraveledPx = 0;
-        this._pipes = [];
-        this._birds = [];
-    }
-
-    private attach() {
-        /* Add initial pipes */
-        let offset = this._spawnInterval;
-        do {
-            this._pipes.push(new Pipe(
-                offset,
-                this._canvas.height
-            ));
-            offset += this._spawnInterval;
-        } while (offset < this._canvas.width);
-
-        if (this._view !== null) {
-            this._view.draw(0, this._pipes, this._birds);
+        //Bites in its tail
+        if (this.snake.coordinates.some(coordinate => coordinate.x === x && coordinate.y === y)) {
+            this.snake.isAlive = false;
+            this._view.draw(this);
+            return;
         }
-
-        this._interval = setInterval(() => {
-            this.step();
-        }, this._frameDuration);
-    }
-
-    private detach() {
-        if (this._interval !== null) {
-            clearInterval(this._interval)
-        }
-    }
-
-    private step() {
-        this._distanceTraveledPx += this._speed;
-
-        /* Add new pipe every spawn interval */
-        if (this._distanceTraveledPx % this._spawnInterval === 0) {
-            this._pipes.push(new Pipe(
-                this._distanceTraveledPx + this._canvas.width,
-                this._canvas.height
-            ));
-        }
-
-        /* Remove pipes that are out of view */
-        for (let i = 0; i < this._pipes.length; i++) {
-            const pipe = this._pipes[i];
-            if (pipe.x - this._distanceTraveledPx < 0) {
-                this._pipes.splice(i, 1);
-            }
-        }
-
-        /* Flap the birds */
-        this._birds.forEach(bird => bird.update());
-
-        /* Determine if they killed themselves */
-        this._birds
-            .filter(bird => bird.alive)
-            .forEach(bird => {
-                this._pipes.forEach(pipe => {
-                    //TODO fix this so that the "ass" of the bird also is hit
-                    if (
-                        (
-                            /* Top pipe */
-                            bird.x + bird.width > pipe.x - this._distanceTraveledPx
-                            && bird.y < pipe.y - pipe.opening
-                            && bird.x + bird.width < pipe.x + pipe.width - this._distanceTraveledPx
-                        )
-                        || (
-                            /* Bottom pipe */
-                            bird.x + bird.width > pipe.x - this._distanceTraveledPx
-                            && bird.x + bird.width < pipe.x + pipe.width - this._distanceTraveledPx
-                            && bird.y + bird.height > pipe.y
-                        )
-                        || bird.y > this._canvas.height
-                        || bird.y + bird.height <= 0) {
-                        bird.alive = false;
-                        this._dieListeners.forEach(listener => listener(bird));
-                    }
-                });
+        //If cherry just push the new coordinate
+        if (this.cherry.x === x && this.cherry.y === y) {
+            this.cherry = Game.randomCoordinate();
+            this.snake.coordinates.push({
+                x: x,
+                y: y
             });
-
-        /* Pass to the view to render */
-        if (this._view != null) {
-            this._view.draw(
-                this._distanceTraveledPx,
-                this._pipes,
-                this._birds
-            );
+            this._view.draw(this);
+            return;
         }
-
-        this._tickListeners.forEach(listener => listener());
-
-        if (!this._birds.some(bird => bird.alive)) {
-            this.terminate();
-        }
-    }
-
-    private preload(): Promise<Images> {
-        return new Promise((resolve, reject) => {
-            Promise.all<HTMLImageElement>([
-                preload(this.sprites.bird),
-                preload(this.sprites.background),
-                preload(this.sprites.pipetop),
-                preload(this.sprites.pipebottom),
-            ]).then(
-                images => {
-                    resolve({
-                        bird: images[0],
-                        background: images[1],
-                        pipetop: images[2],
-                        pipebottom: images[3]
-                    });
-                }
-            );
+        //If no cherry, push new coordinate but pop tail
+        this.snake.coordinates.push({
+            x: x,
+            y: y
         });
+        this.snake.coordinates.shift();
+        this._view.draw(this)
     }
 
+    public kill() {
+        this.snake.isAlive = false;
+    }
+
+
+    private static randomCoordinate() {
+        return {
+            x: Math.floor(Math.random() * Game.width),
+            y: Math.floor(Math.random() * Game.height)
+        };
+    }
 }

@@ -9,9 +9,9 @@ export default class Machine {
 
     /* Number of nNeuronsInLayer in each part of the network */
     private _perceptronNetwork = {
-        input: 2,
-        hiddens: [2],
-        output: 1
+        input: 5,
+        hiddens: [12, 12],
+        output: 4
     };
 
     /* How many should be preserved */
